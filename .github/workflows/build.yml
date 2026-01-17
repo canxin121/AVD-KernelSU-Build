@@ -46,6 +46,32 @@ jobs:
           mkdir target/logs
           sed -i 's/-DKSU_VERSION=11998/-DKSU_VERSION=12816/g' KernelSU-Next/kernel/Makefile
 
+      - name: Enable KernelSU config
+        run: |
+          set -e
+          CONFIG_SCRIPT=""
+          if [ -x common/scripts/config ]; then
+            CONFIG_SCRIPT=common/scripts/config
+          elif [ -x scripts/config ]; then
+            CONFIG_SCRIPT=scripts/config
+          fi
+
+          if [ -n "$CONFIG_SCRIPT" ]; then
+            for cfg in common/arch/x86/configs/*defconfig; do
+              [ -f "$cfg" ] || continue
+              echo "Enabling KSU in $cfg"
+              "$CONFIG_SCRIPT" --file "$cfg" -e KPROBES -e KSU -e KSU_DEBUG
+            done
+          else
+            for cfg in common/arch/x86/configs/*defconfig; do
+              [ -f "$cfg" ] || continue
+              echo "Enabling KSU in $cfg"
+              echo "CONFIG_KPROBES=y" >> "$cfg"
+              echo "CONFIG_KSU=y" >> "$cfg"
+              echo "CONFIG_KSU_DEBUG=y" >> "$cfg"
+            done
+          fi
+
       - name: Build kernel
         run: |
           ./tools/bazel run --verbose_failures --jobs=$(nproc --all) --make_jobs=$(nproc --all) --config=android_ci --profile=target/logs/command.profile.json //common-modules/virtual-device:virtual_device_x86_64_dist -- --dist_dir=target --flat
