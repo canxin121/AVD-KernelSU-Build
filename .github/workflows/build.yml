@@ -62,7 +62,7 @@ jobs:
           # Disable defconfig check and apply KSU options after defconfig
           sed -i '/POST_DEFCONFIG_CMDS="check_defconfig"/d' "$CONFIG_FILE"
           sed -i '/^POST_DEFCONFIG_CMDS=/d' "$CONFIG_FILE"
-          printf '%s\n' 'POST_DEFCONFIG_CMDS="${KERNEL_DIR}/scripts/config --file ${OUT_DIR}/.config -e KPROBES -e KSU -e KSU_DEBUG; make -C ${KERNEL_DIR} ${TOOL_ARGS} O=${OUT_DIR} olddefconfig"' >> "$CONFIG_FILE"
+          printf '%s\n' "POST_DEFCONFIG_CMDS='\${KERNEL_DIR}/scripts/config --file \${OUT_DIR}/.config -e KPROBES -e KSU -e KSU_DEBUG; make -C \${KERNEL_DIR} \${TOOL_ARGS} O=\${OUT_DIR} olddefconfig'" >> "$CONFIG_FILE"
 
       - name: Build kernel
         run: |
