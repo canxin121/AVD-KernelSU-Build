@@ -49,28 +49,20 @@ jobs:
       - name: Enable KernelSU config
         run: |
           set -e
-          CONFIG_SCRIPT=""
-          if [ -x common/scripts/config ]; then
-            CONFIG_SCRIPT=common/scripts/config
-          elif [ -x scripts/config ]; then
-            CONFIG_SCRIPT=scripts/config
+          CONFIG_FILE=""
+          if [ -f common/build.config.gki ]; then
+            CONFIG_FILE=common/build.config.gki
+          elif [ -f build.config.gki ]; then
+            CONFIG_FILE=build.config.gki
+          else
+            echo "build.config.gki not found"
+            exit 1
           fi
 
-          if [ -n "$CONFIG_SCRIPT" ]; then
-            for cfg in common/arch/x86/configs/*defconfig; do
-              [ -f "$cfg" ] || continue
-              echo "Enabling KSU in $cfg"
-              "$CONFIG_SCRIPT" --file "$cfg" -e KPROBES -e KSU -e KSU_DEBUG
-            done
-          else
-            for cfg in common/arch/x86/configs/*defconfig; do
-              [ -f "$cfg" ] || continue
-              echo "Enabling KSU in $cfg"
-              echo "CONFIG_KPROBES=y" >> "$cfg"
-              echo "CONFIG_KSU=y" >> "$cfg"
-              echo "CONFIG_KSU_DEBUG=y" >> "$cfg"
-            done
-          fi
+          # Disable defconfig check and apply KSU options after defconfig
+          sed -i '/POST_DEFCONFIG_CMDS="check_defconfig"/d' "$CONFIG_FILE"
+          sed -i '/^POST_DEFCONFIG_CMDS=/d' "$CONFIG_FILE"
+          printf '%s\n' 'POST_DEFCONFIG_CMDS="${KERNEL_DIR}/scripts/config --file ${OUT_DIR}/.config -e KPROBES -e KSU -e KSU_DEBUG; make -C ${KERNEL_DIR} ${TOOL_ARGS} O=${OUT_DIR} olddefconfig"' >> "$CONFIG_FILE"
 
       - name: Build kernel
         run: |
